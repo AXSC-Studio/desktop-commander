@@ -1,6 +1,6 @@
 #!/bin/sh
 # Desktop Commander entrypoint
-# DC_ALLOWED_DIR が未設定の場合、/Users/*/Development を自動検出する
+# Auto-detects Development dir. Pre-populates config on first run (before DC reads it).
 
 if [ -n "$DC_ALLOWED_DIR" ]; then
   ALLOWED_DIR="$DC_ALLOWED_DIR"
@@ -11,44 +11,28 @@ fi
 
 CONFIG="/root/.claude-server-commander/config.json"
 
+# macOS Homebrew compatibility
 mkdir -p /opt/homebrew/bin
 ln -sf /usr/bin/gh /opt/homebrew/bin/gh 2>/dev/null || true
 
-patch_config() {
+# First-run only: write correct config BEFORE DC starts (DC reads it on startup)
+if [ ! -s "$CONFIG" ]; then
+  mkdir -p "$(dirname "$CONFIG")"
   node -e "
     const fs = require('fs');
-    const p = '$CONFIG';
-    const d = '$ALLOWED_DIR';
-    try {
-      const c = JSON.parse(fs.readFileSync(p, 'utf8'));
-      c.allowedDirectories = [d];
-      c.blockedCommands = [
+    fs.writeFileSync('$CONFIG', JSON.stringify({
+      allowedDirectories: ['$ALLOWED_DIR'],
+      blockedCommands: [
+        'nc','ncat','netcat','scp','sftp','ftp','telnet',
         'mkfs','format','mount','umount','fdisk','dd','parted','diskpart',
         'sudo','su','passwd','adduser','useradd','usermod','groupadd','chsh',
         'visudo','shutdown','reboot','halt','poweroff','init',
         'iptables','firewall','netsh','sfc','bcdedit','reg','net','sc',
-        'runas','cipher','takeown',
-        'nc','ncat','netcat','scp','sftp','ftp','telnet'
-      ];
-      fs.writeFileSync(p, JSON.stringify(c, null, 2));
-      process.stderr.write('entrypoint: patched -> ' + d + '\n');
-    } catch(e) {
-      process.stderr.write('entrypoint: patch failed: ' + e.message + '\n');
-    }
+        'runas','cipher','takeown'
+      ]
+    }, null, 2));
+    process.stderr.write('entrypoint: initialized config for $ALLOWED_DIR\n');
   "
-}
-
-# DCがconfigを書くまでポーリング（最大30秒）
-(
-  i=0
-  while [ $i -lt 30 ]; do
-    sleep 1
-    if [ -f "$CONFIG" ] && [ "$(wc -c < "$CONFIG" 2>/dev/null)" -gt 50 ]; then
-      patch_config
-      break
-    fi
-    i=$((i+1))
-  done
-) &
+fi
 
 exec desktop-commander
