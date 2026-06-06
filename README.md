@@ -1,38 +1,106 @@
-# Desktop Commander セキュリティ強化 完全マニュアル
+# 🛡️ Desktop Commander Docker Shield
 
-> **DC** = Desktop Commander（このマニュアル全体での略称）
+[![GitHub stars](https://img.shields.io/github/stars/AXSC-Studio/desktop-commander?style=flat-square)](https://github.com/AXSC-Studio/desktop-commander/stargazers)
+[![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square)]()
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-**対象:** AXSC 受講生 / Docker Shield 再現者  
-**所要時間:** 約 45 分
+> **DC** = Desktop Commander（このドキュメント全体での略称）
+
+**Claude に Mac の全ファイルへのアクセスを与えていませんか？**
+
+Desktop Commander はデフォルトで AI にホーム全体（`~/.ssh`、`~/.aws`、全 `.env`）への
+アクセスを許可します。悪意あるプロンプトが1つ混入するだけで、**ユーザーの操作なしに**
+SSH 秘密鍵が外部送信されます。これは理論ではなく、今日すぐ成立する攻撃です。
+
+このリポジトリは **Docker Shield** を用いて Desktop Commander を安全に運用するための
+完全な設定ファイルとマニュアルです。
 
 ---
 
-## このマニュアルでやること
+## TL;DR
 
-| 項目 | 変更前（デフォルト） | 変更後（Docker Shield） |
+| | デフォルト DC | Docker Shield（このリポジトリ） |
 |---|---|---|
-| 実行環境 | ホスト Mac 上で直接動作 | Docker コンテナ内で隔離 |
-| ファイルアクセス範囲 | ホームフォルダ全体 | Development フォルダのみ |
-| `~/.ssh`（SSH 秘密鍵） | 盗める | **物理的に不可能** |
-| `~/.aws`（クラウド認証） | 盗める | **物理的に不可能** |
-| git / GH CLI | ホスト依存 | **DC 内で完全動作** |
-| 開発サーバー | ホスト依存 | ポートマップで対応 |
-| セッション毎の手動設定 | 毎回必要 | **不要（自動適用）** |
+| `~/.ssh` SSH 秘密鍵 | 🔴 盗める | ✅ 物理的に不可能 |
+| `~/.aws` クラウド認証 | 🔴 盗める | ✅ 物理的に不可能 |
+| 他プロジェクトの `.env` | 🔴 盗める | ✅ 物理的に不可能 |
+| `git push` / `gh pr create` | ⚙️ ホスト依存 | ✅ DC 内で完全動作 |
+| 開発サーバー起動 | ⚙️ ホスト依存 | ✅ ポートマップで対応 |
+| セッション毎の手動設定 | 🔴 毎回必要 | ✅ 自動適用（不要） |
+
 
 ---
 
-## なぜ Docker が必要か
+## なぜ Docker が必要か：Parasitic Toolchain Attack
 
-Desktop Commander は AI が自律的にファイル読み書き・コマンド実行を行えるツールです。
-悪意あるプロンプトが混入すると `~/.ssh` や `.env` を読んで外部送信する
-**Parasitic Toolchain Attack** が成立します。ユーザー操作は不要です。
+```
+① 侵入（EIT）   Webページ等の悪意ある命令が fetch 時に AI に混入
+      ↓
+② 収集（PAT）   汚染された AI が ~/.ssh / ~/.env を自律的に読み取る
+      ↓
+③ 漏洩（NAT）   curl 等で外部送信。ユーザー操作ゼロで完結
+```
 
-Docker はコンテナという「檻」を設け、攻撃が成功しても鍵（`~/.ssh`）に
-物理的に到達できない構造を作ります。
+**根本原因：** LLM はデータと命令を区別できない（パッチ不能な原理的弱点）。
+だから「たどり着けない構造」を Docker で作る。
 
 ---
 
-## ファイル構成（このリポジトリ）
+## アーキテクチャ：制御は対象の「外側」に置く
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  macOS ホスト                                            │
+│                                                          │
+│   Claude Desktop ──stdio──▶                             │
+│                             ┌───────────────────────┐   │
+│   🔒 ~/.ssh    (マウントなし) │  Docker コンテナ       │  │
+│   🔒 ~/.aws    (マウントなし) │                       │   │
+│                             │  Desktop Commander    │   │
+│   📂 ~/Development  ──────▶ │  + git + gh CLI       │   │
+│   📄 ~/.config/gh  :ro ───▶ │                       │   │
+│   📄 ~/.gitconfig  :ro ───▶ │  Port 映射            │   │
+│                             │  blockedCommands      │   │
+│                             └───────────────────────┘   │
+│                                                          │
+│  攻撃成功しても ~/.ssh には物理的に届かない               │
+└─────────────────────────────────────────────────────────┘
+```
+
+
+---
+
+## クイックスタート（概要）
+
+```bash
+# 1. クローン
+git clone https://github.com/AXSC-Studio/desktop-commander.git ~/Development/desktop_commander
+cd ~/Development/desktop_commander && mkdir -p dc-data
+
+# 2. gh 認証（ファイル保存で Docker から利用可能にする）
+gh auth login -h github.com --insecure-storage
+
+# 3. config.json を編集 → Docker イメージをビルド
+bash build.sh desktop-commander:latest
+
+# 4. Claude Desktop を再起動 → 完了
+```
+
+詳細は以下のステップバイステップを参照してください。
+
+---
+
+## 事前準備
+
+- **gh CLI** がホスト Mac にインストール済みであること
+  ```bash
+  brew install gh
+  ```
+- **Docker Desktop** をインストール（STEP 1 参照）
+
+---
+
+## ファイル構成
 
 ```
 desktop_commander/
@@ -43,15 +111,6 @@ desktop_commander/
 └── dc-data/          # DC ランタイムデータ（.gitignore 済み）
 ```
 
----
-
-## 事前準備
-
-- **gh CLI** がホスト Mac にインストール済みであること
-  ```bash
-  brew install gh
-  ```
-- **Docker Desktop** をインストール（後述 STEP 1）
 
 ---
 
@@ -78,10 +137,9 @@ mkdir -p dc-data
 3. 画面下部に「Engine running」が表示されれば完了
 4. **「バックグラウンドでの実行を許可」→ 必ず許可**
 
-**自動起動設定（推奨）**
-歯車アイコン > General >「Start Docker Desktop when you sign in」にチェック → Apply
+**自動起動設定（推奨）：** 歯車アイコン > General >「Start Docker Desktop when you sign in」→ Apply
 
-> Claude Desktop より先に Docker Desktop が起動している必要があります。
+> ⚠️ Claude Desktop より先に Docker Desktop が起動している必要があります。
 
 ---
 
@@ -92,10 +150,10 @@ mkdir -p dc-data
 
 ---
 
-## STEP 3  GitHub CLI の認証を設定する（重要）
+## STEP 3  GitHub CLI の認証を設定する
 
-DC コンテナ内から `git push` / `gh pr create` を使うために
-`--insecure-storage` オプションでトークンをファイルに保存します。
+DC コンテナ内から `git push` / `gh pr create` を使うために、
+`--insecure-storage` でトークンをファイルに保存します。
 
 ```bash
 gh auth login -h github.com --insecure-storage
@@ -107,10 +165,11 @@ gh auth login -h github.com --insecure-storage
 - `Authentication credentials saved in plain text` が出れば成功
 
 > **なぜ `--insecure-storage` が必要か**
-> macOS 標準設定では gh トークンが Keychain に保存されます。
+> macOS 標準では gh トークンが Keychain に保存されます。
 > Docker コンテナは Keychain にアクセスできないため、
-> `~/.config/gh/hosts.yml`（ファイル）への保存が必要です。
-> コンテナは `:ro`（読み取り専用）でマウントするため書き換え不能です。
+> `~/.config/gh/hosts.yml` へのファイル保存が必要です。
+> コンテナは `:ro`（読み取り専用）でマウントするため書き換えは不能です。
+
 
 ---
 
@@ -141,55 +200,47 @@ open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 }
 ```
 
-**ユーザー名の確認:**
-```bash
-whoami
-```
+**ユーザー名確認：** `whoami`
 
-**ポート番号の選び方:**
-`XXXX`〜`ZZZZ` には開発サーバーで使うポートを指定します。
-よく使われる範囲（3000〜5999、8000〜8099）は競合しやすいため
-6000〜9999 から空きを選ぶことを推奨します。
+**ポート番号：** 開発サーバーで使うポートを指定。競合を避けるため 6000〜9999 を推奨。
 
 ```bash
-# 空きポートの確認例（3つの候補）
+# 空きポートの確認例
 for port in 7432 7891 8743; do
   lsof -i :$port > /dev/null 2>&1 && echo "$port: 使用中" || echo "$port: 空き"
 done
 ```
 
-> **マウントの意味**
-> | マウント | 権限 | 用途 |
+> **マウント設計の意図**
+>
+> | マウント | 権限 | 理由 |
 > |---|---|---|
 > | `/Development` | 読み書き | 作業ディレクトリ |
-> | `~/.config/gh` | `:ro` | gh 認証トークン（読み取り専用） |
-> | `~/.gitconfig` | `:ro` | git identity（読み取り専用） |
-> | `~/.ssh` | **マウントなし** | SSH 秘密鍵を保護 |
+> | `~/.config/gh` | `:ro` | gh 認証トークン（改ざん防止） |
+> | `~/.gitconfig` | `:ro` | git identity（改ざん防止） |
+> | `~/.ssh` | **なし** | SSH 秘密鍵を物理的に保護 |
 
 ---
 
 ## STEP 5  Docker イメージをビルドする
 
 ```bash
-cd /Users/あなたのユーザー名/Development/desktop_commander
+cd ~/Development/desktop_commander
 bash build.sh desktop-commander:latest
 ```
 
-以下が表示されれば成功：
+`Build complete: desktop-commander:latest` が表示されれば成功。
 
-```
-Build complete: あなたのユーザー名/desktop-commander:latest
-```
+> Dockerfile を変更した場合は必ずリビルドすること。
 
-> Dockerfile を変更した場合は必ず再実行すること。
 
 ---
 
 ## STEP 6  Claude Desktop を起動して確認する
 
-1. Claude Desktop を起動（Docker Desktop が先に起動していること）
-2. 新しいチャットを開く
-3. 以下を入力：
+1. Docker Desktop が起動していることを確認
+2. Claude Desktop を起動 → 新しいチャットを開く
+3. 以下を送信：
 
 ```
 Desktop Commander の get_config を実行してください
@@ -209,50 +260,50 @@ Desktop Commander の get_config を実行してください
 ### DC 内で完全動作（ターミナル不要）
 
 ```bash
-# git 操作（HTTPS 経由・DC 内から実行可能）
+# git 操作（HTTPS 経由）
 git add . && git commit -m "message" && git push
 
-# GitHub CLI（DC 内から実行可能）
+# GitHub CLI
 gh pr create
 gh auth status
 
-# 開発サーバー（ポートマップ経由でホストブラウザからアクセス可）
+# 開発サーバー（ホストブラウザから localhost:XXXX でアクセス可）
 npm run dev -- --port XXXX
-curl http://localhost:XXXX
 ```
 
 > **SSH git（`git@github.com:...`）は使えません。**
-> HTTPS（`https://github.com/...`）を使ってください。
-> 現代の開発では HTTPS + gh auth が標準です。
+> `https://github.com/...` 形式を使ってください。
+> HTTPS + gh auth が現代の標準です。
 
 ---
 
 ## セキュリティ設計：3層防御
 
 ```
-[Docker 壁]          主防御（常に有効・迂回不能）
-  └ ~/.ssh, ~/.aws, 他PJTの .env → 物理的にアクセス不能
+Layer 1: Docker 壁        ← 主防御（常に有効・迂回不能）
+  └─ ~/.ssh, ~/.aws → マウントなし = 物理的にアクセス不能
 
-[allowedDirectories] ソフトウェア的な柵
-  └ コンテナ内での /Development 外アクセスを制限
+Layer 2: allowedDirectories ← ソフトウェア的な柵
+  └─ /Development 外へのアクセスを DC が拒否
 
-[blockedCommands]    出口フィルタ
-  └ nc, scp, ftp 等の送信系コマンドを遮断
+Layer 3: blockedCommands    ← 出口フィルタ
+  └─ nc, scp, ftp 等の送信系コマンドをブロック
 ```
 
-**残存ギャップ:** `curl` はヘルスチェックのため開放しています。
+**⚠️ 残存ギャップ：** `curl` はヘルスチェックのため開放しています。
 `/Development` 内の `.env` は理論上 curl で外部送信可能です。
-Production 環境では `--network none` の使用を検討してください。
+Production 環境では `--network none` を検討してください。
 
 ---
 
-## entrypoint.sh が起動時に自動実行すること
+## entrypoint.sh の自動処理
 
-毎回の手動設定は不要です。コンテナ起動ごとに以下が自動適用されます。
+コンテナ起動ごとに以下が **自動適用** されます。毎回の手動設定は不要です。
 
 1. `allowedDirectories` を `DC_ALLOWED_DIR` のパスに設定
 2. `blockedCommands` に nc / scp / ftp 等を設定
-3. macOS Homebrew の gh パスをコンテナ内 gh へリンク（git credential 解決）
+3. macOS Homebrew の gh パスをコンテナ内 gh にリンク（git credential 解決）
+
 
 ---
 
@@ -263,7 +314,7 @@ Production 環境では `--network none` の使用を検討してください。
 | DC が反応しない | Docker Desktop が起動しているか確認 |
 | `isContainer: false` | DXT が再インストールされていないか確認 |
 | `allowedDirectories: []` | config.json に `DC_ALLOWED_DIR` が設定されているか確認 |
-| `git push` が失敗 | `gh auth status` で `✓ Logged in` を確認。失敗なら STEP 3 を再実行 |
+| `git push` が失敗 | `gh auth status` を確認 → 失敗なら STEP 3 を再実行 |
 | build.sh でエラー | Docker Desktop の Engine が Running か確認 |
 
 ---
@@ -271,19 +322,40 @@ Production 環境では `--network none` の使用を検討してください。
 ## チェックリスト
 
 **初回セットアップ**
-- [ ] リポジトリをクローン済み（git clone + mkdir -p dc-data）
-- [ ] Docker Desktop インストール・起動済み
-- [ ] 「ログイン時に自動起動」設定 ON
-- [ ] DXT アンインストール済み
+- [ ] リポジトリをクローン・`dc-data` ディレクトリを作成
+- [ ] Docker Desktop インストール・起動済み・自動起動 ON
+- [ ] DXT アンインストール済み（Cmd+Q で完全終了）
 - [ ] `gh auth login -h github.com --insecure-storage` 完了
 - [ ] `claude_desktop_config.json` 編集済み（4 マウント + ポート + DC_ALLOWED_DIR）
-- [ ] `bash build.sh あなたのユーザー名/desktop-commander:latest` 成功
+- [ ] `bash build.sh desktop-commander:latest` 成功
 - [ ] `isContainer: true` + `allowedDirectories` が正しいパスで確認済み
 
 **日常運用**
 - [ ] Claude Desktop を開く前に Docker Desktop が起動していることを確認
-- [ ] gh トークン期限切れの場合は `gh auth login -h github.com --insecure-storage` を再実行
+- [ ] gh トークン期限切れ時は `gh auth login -h github.com --insecure-storage` を再実行
 
 ---
 
-*AXSC Studio — https://github.com/AXSC-Studio*
+## コントリビュート
+
+Issue・PR 歓迎します。特に以下を募集しています：
+
+- Linux / Windows 対応
+- `--network none` モードでの開発サーバー運用事例
+- 他の MCP サーバーへの Docker Shield 適用事例
+
+---
+
+## 作者
+
+**Peaske** — Indie Hacker / AI-Driven Accelerator
+
+- 🐦 X（Twitter）: [@peaske_en](https://x.com/peaske_en)
+- 🏢 Organization: [AXSC Studio](https://github.com/AXSC-Studio)
+
+⭐ **このリポジトリが役に立ったらスターをお願いします！**
+MCP セキュリティの認知向上に繋がります。
+
+---
+
+*MIT License — AXSC Studio*
