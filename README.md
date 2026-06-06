@@ -1,5 +1,7 @@
 # Desktop Commander セキュリティ強化 完全マニュアル
 
+> **DC** = Desktop Commander（このマニュアル全体での略称）
+
 **対象:** AXSC 受講生 / Docker Shield 再現者  
 **所要時間:** 約 45 分
 
@@ -56,7 +58,7 @@ desktop_commander/
 ## STEP 0  リポジトリをクローンする
 
 ```bash
-git clone https://github.com/peaske/desktop-commander.git ~/Development/desktop_commander
+git clone https://github.com/AXSC-Studio/desktop-commander.git ~/Development/desktop_commander
 cd ~/Development/desktop_commander
 mkdir -p dc-data
 ```
@@ -134,7 +136,7 @@ open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
     "-p", "YYYY:YYYY",
     "-p", "ZZZZ:ZZZZ",
     "--network", "bridge",
-    "あなたのユーザー名/desktop-commander:latest"
+    "desktop-commander:latest"
   ]
 }
 ```
@@ -170,7 +172,7 @@ done
 
 ```bash
 cd /Users/あなたのユーザー名/Development/desktop_commander
-bash build.sh あなたのユーザー名/desktop-commander:latest
+bash build.sh desktop-commander:latest
 ```
 
 以下が表示されれば成功：
@@ -284,4 +286,4 @@ Production 環境では `--network none` の使用を検討してください。
 
 ---
 
-*Peaske / AXSC*
+*AXSC Studio — https://github.com/AXSC-Studio*
