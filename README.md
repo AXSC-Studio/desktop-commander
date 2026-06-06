@@ -15,6 +15,8 @@
 
 | Version | Date | Change |
 |---|---|---|
+| v1.3.0 | 2026-06-06 | Pre-populate config on first run — global users now work with zero manual setup |
+| v1.2.2 | 2026-06-06 | Replace `sleep 1` race condition with polling; discovered `set_config_value` API as correct approach |
 | v1.2.0 | 2026-06-06 | Auto-detect `Development` dir at startup — no manual config required (macOS + Linux) |
 | v1.1.2 | 2026-06-06 | Added Linux `/home` path to auto-detection |
 | v1.1.1 | 2026-06-06 | Fixed git credential: symlink `/opt/homebrew/bin/gh` for read-only `.gitconfig` mount |
@@ -206,6 +208,8 @@ Issues and PRs welcome: Linux/Windows support · `--network none` dev server set
 
 | 版本 | 日期 | 变更内容 |
 |---|---|---|
+| v1.3.0 | 2026-06-06 | 首次启动时预写入配置，全球用户无需手动设置 |
+| v1.2.2 | 2026-06-06 | 将 `sleep 1` 竞争条件替换为轮询；确认 `set_config_value` API 为正确方案 |
 | v1.2.0 | 2026-06-06 | 启动时自动检测 `Development` 目录，无需手动配置（macOS + Linux）|
 | v1.1.2 | 2026-06-06 | 自动检测增加 Linux `/home` 路径支持 |
 | v1.1.1 | 2026-06-06 | 修复 git 认证：为只读 `.gitconfig` 挂载创建 `/opt/homebrew/bin/gh` 符号链接 |
@@ -398,6 +402,8 @@ npm run dev -- --port XXXX   # 在宿主机浏览器通过 localhost:XXXX 访问
 
 | バージョン | 日付 | 変更内容 |
 |---|---|---|
+| v1.3.0 | 2026-06-06 | 初回起動時に config を事前書き込み — 全世界のユーザーが設定不要で動作 |
+| v1.2.2 | 2026-06-06 | `sleep 1` の race condition を修正。`set_config_value` API が正しい設定変更手段と判明 |
 | v1.2.0 | 2026-06-06 | 起動時に `Development` ディレクトリを自動検出 — 手動設定不要（macOS + Linux 対応）|
 | v1.1.2 | 2026-06-06 | Linux の `/home` パスを自動検出対象に追加 |
 | v1.1.1 | 2026-06-06 | git 認証修正：read-only `.gitconfig` マウント対応のため `/opt/homebrew/bin/gh` シンリンクを追加 |
