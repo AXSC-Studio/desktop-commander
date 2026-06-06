@@ -4,19 +4,21 @@
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square)]()
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-**🌐 [English](#-english) · [中文](#-中文) · [日本語](#-日本語)**
+**🌐 [🇺🇸 English](#-english) · [🇨🇳 中文](#-中文) · [🇯🇵 日本語](#-日本語)**
 
 ---
 
-## 🇬🇧 English
+## 🇺🇸 English
 
 ### What is MCP?
 
-MCP (Model Context Protocol) is the world's fastest-growing AI infrastructure standard — adopted by 28% of Fortune 500 companies, powering 20,000+ servers with 97M+ monthly SDK downloads, and named the #1 IT Infrastructure Technology of 2026. Every major AI company (Anthropic, OpenAI, Google, Amazon, Microsoft) has rallied behind it. It is the "USB-C of AI" — a universal connector that gives AI true hands and feet to operate autonomously.
+MCP (Model Context Protocol) is the fastest-growing AI infrastructure standard in the world — adopted by 28% of Fortune 500 companies, powering 20,000+ servers with 97M+ monthly SDK downloads, and named the #1 IT Infrastructure Technology of 2026. Anthropic, OpenAI, Google, Amazon, and Microsoft have all rallied behind the same standard. It is the "USB-C of AI" — a universal connector that gives AI true hands and feet to operate autonomously.
 
-**Desktop Commander is the **#1 community MCP tool, officially recommended by Anthropic** on their Claude plugin marketplace. It is open-source (MIT), developed by Eduard Ruzga, and endorsed — but not built — by Anthropic.** With it, Claude can read/write files, execute terminal commands, manage git repositories, and run dev servers — all autonomously.
+### Desktop Commander — The #1 Community MCP Tool
 
-### ⚠️ But there is a critical security risk.
+**Desktop Commander** is an open-source MCP server (MIT, by Eduard Ruzga) officially recommended by Anthropic on their Claude plugin marketplace. It is the most widely used MCP tool for Claude Desktop. With it, Claude can read/write files, execute terminal commands, manage git repositories, and run dev servers — all autonomously.
+
+### ⚠️ Critical Security Risk
 
 By default, Desktop Commander gives Claude access to your **entire home directory** — including `~/.ssh` (SSH private keys) and `~/.aws` (cloud credentials). A single malicious prompt injected into any webpage Claude reads can silently exfiltrate your secrets. No user action required. This is the **Parasitic Toolchain Attack**.
 
@@ -26,36 +28,160 @@ By default, Desktop Commander gives Claude access to your **entire home director
 ③ Exfil   — Data sent to attacker via curl. Zero user interaction.
 ```
 
-### The Solution: Docker Shield
+The root cause is that LLMs cannot distinguish data from instructions — an unfixable architectural property. The solution is to make secrets **physically unreachable** using Docker.
 
-This repository implements **Docker Shield** — a container isolation layer that makes your secrets **physically unreachable** while keeping git, GitHub CLI, and dev servers fully functional inside DC.
+### TL;DR
 
 | | Default DC | Docker Shield |
 |---|---|---|
 | `~/.ssh` SSH keys | 🔴 Stealable | ✅ Physically impossible |
 | `~/.aws` cloud creds | 🔴 Stealable | ✅ Physically impossible |
-| `git push` / `gh pr` | ⚙️ Host only | ✅ Works inside DC |
+| Other projects' `.env` | 🔴 Stealable | ✅ Physically impossible |
+| `git push` / `gh pr create` | ⚙️ Host only | ✅ Works inside DC |
 | Dev server | ⚙️ Host only | ✅ Port-mapped |
 | Manual session setup | 🔴 Every time | ✅ Auto-applied |
 
-### Quick Start
+
+### Prerequisites
+
+- macOS with [Homebrew](https://brew.sh) installed
+- `brew install gh` (GitHub CLI)
+- Docker Desktop (installed in STEP 1)
+
+### STEP 0 — Clone the repository
 
 ```bash
 git clone https://github.com/AXSC-Studio/desktop-commander.git ~/Development/desktop_commander
 cd ~/Development/desktop_commander && mkdir -p dc-data
-gh auth login -h github.com --insecure-storage
-bash build.sh desktop-commander:latest
 ```
 
-See the [Japanese section](#-日本語) for the complete step-by-step guide.
+### STEP 1 — Install Docker Desktop
+
+1. Download from `https://www.docker.com/products/docker-desktop/`
+2. Launch → "Use recommended settings" → Finish → Skip
+3. Confirm "Engine running" in the bottom bar
+4. **Allow background execution when prompted (required)**
+5. Gear icon → General → enable "Start Docker Desktop when you sign in"
+
+> ⚠️ Docker Desktop must start **before** Claude Desktop.
+
+### STEP 2 — Uninstall DXT
+
+1. Claude Desktop → Settings → Extensions → desktop-commander → Uninstall
+2. **Quit completely with Cmd+Q** (closing the window is not enough)
+
+### STEP 3 — Authenticate GitHub CLI (critical)
+
+```bash
+gh auth login -h github.com --insecure-storage
+```
+
+- Protocol → **HTTPS**
+- Authentication → **Login with a web browser**
+- Enter the `XXXX-XXXX` code shown in your terminal into the browser
+
+> **Why `--insecure-storage`?** By default, macOS stores the gh token in Keychain. Docker containers cannot access Keychain, so the token must be stored in `~/.config/gh/hosts.yml` (a plain file). The container mounts this file as `:ro` (read-only), preventing tampering.
+
+### STEP 4 — Edit claude_desktop_config.json
+
+```bash
+open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+```
+
+Add to `mcpServers` (replace `yourusername` and choose ports):
+
+```json
+"desktop-commander": {
+  "command": "docker",
+  "args": [
+    "run", "--rm", "-i",
+    "-v", "/Users/yourusername/Development:/Users/yourusername/Development",
+    "-v", "/Users/yourusername/Development/desktop_commander/dc-data:/root/.claude-server-commander",
+    "-v", "/Users/yourusername/.config/gh:/root/.config/gh:ro",
+    "-v", "/Users/yourusername/.gitconfig:/root/.gitconfig:ro",
+    "-e", "DC_ALLOWED_DIR=/Users/yourusername/Development",
+    "-p", "XXXX:XXXX",
+    "--network", "bridge",
+    "desktop-commander:latest"
+  ]
+}
+```
+
+Confirm your username: `whoami` — Choose ports from 6000–9999 to avoid conflicts.
+
+| Mount | Permission | Purpose |
+|---|---|---|
+| `/Development` | read-write | AI's working directory |
+| `~/.config/gh` | `:ro` | gh auth token (tamper-proof) |
+| `~/.gitconfig` | `:ro` | git identity (tamper-proof) |
+| `~/.ssh` | **not mounted** | SSH keys physically protected |
+
+
+### STEP 5 — Build the Docker image
+
+```bash
+cd ~/Development/desktop_commander
+bash build.sh desktop-commander:latest
+# Expected: Build complete: desktop-commander:latest
+```
+
+### STEP 6 — Launch and verify
+
+1. Start Claude Desktop (Docker Desktop must already be running)
+2. Open a new chat and send: `Please run Desktop Commander's get_config`
+
+| Check | Expected value |
+|---|---|
+| `isContainer` | `true` |
+| `isDXT` | `false` |
+| `allowedDirectories` | `["/Users/yourusername/Development"]` |
+| `blockedCommands` | contains `nc`, `scp`, etc. |
+
+### What you can now do inside DC (no terminal needed)
+
+```bash
+git add . && git commit -m "message" && git push
+gh pr create && gh auth status
+npm run dev -- --port XXXX   # accessible at localhost:XXXX in your browser
+```
+
+> **SSH git (`git@github.com:...`) is not supported.** Use HTTPS (`https://github.com/...`).
+
+### Security Design
+
+```
+Layer 1: Docker wall        — Primary defense (always active, cannot be bypassed)
+  └─ ~/.ssh, ~/.aws → not mounted = physically unreachable
+
+Layer 2: allowedDirectories — Software fence
+  └─ DC rejects access outside /Development
+
+Layer 3: blockedCommands    — Exit filter
+  └─ nc, scp, ftp, telnet blocked
+```
+
+**Residual gap:** `curl` is left open for health checks. In production, consider `--network none`.
+
+### Checklist
+
+- [ ] Cloned repo and created `dc-data/`
+- [ ] Docker Desktop installed, running, auto-start ON
+- [ ] DXT uninstalled (Cmd+Q to fully quit)
+- [ ] `gh auth login -h github.com --insecure-storage` completed
+- [ ] `claude_desktop_config.json` edited (4 mounts + port + DC_ALLOWED_DIR)
+- [ ] `bash build.sh desktop-commander:latest` succeeded
+- [ ] `isContainer: true` confirmed in get_config
+
+### Contribute
+
+Issues and PRs welcome: Linux/Windows support · `--network none` dev server setups · Docker Shield for other MCP servers
 
 ### Author
 
 **Peaske** — Indie Hacker / AI-Driven Accelerator
 🐦 [@peaske_en](https://x.com/peaske_en) · 🏢 [AXSC Studio](https://github.com/AXSC-Studio)
 
-⭐ **Star this repo** if it helped protect your secrets!
-
+⭐ **Star this repo** to help spread MCP security awareness!
 
 ---
 
@@ -63,13 +189,15 @@ See the [Japanese section](#-日本語) for the complete step-by-step guide.
 
 ### 什么是 MCP？
 
-MCP（模型上下文协议）是全球增长最快的 AI 基础设施标准。财富 500 强中 28% 的企业已采用，服务器数量超过 2 万个，每月 SDK 下载量达 9700 万次，并荣获 2026 年度 IT 基础设施技术大奖第一名。Anthropic、OpenAI、Google、Amazon、Microsoft 等各大 AI 巨头均已采用同一标准——这在科技史上极为罕见。MCP 被称为"AI 界的 USB-C"，是让 AI 真正拥有"手脚"、能够自主操作计算机的通用连接标准。
+MCP（模型上下文协议）是全球增长最快的 AI 基础设施标准。财富 500 强中 28% 的企业已采用，服务器数量超过 2 万个，月均 SDK 下载量达 9700 万次，荣获 2026 年度 IT 基础设施技术大奖第一名。Anthropic、OpenAI、Google、Amazon、Microsoft 在竞争态势下共同采用同一标准——在科技史上极为罕见。MCP 被称为"AI 界的 USB-C"，是让 AI 真正拥有"手脚"、能够自主操作计算机的通用连接标准。
 
-**Desktop Commander 是 **Anthropic 官方推荐**的社区 No.1 MCP 工具，由开发者 Eduard Ruzga 主导的开源项目（MIT 协议），已被 Anthropic 收录于官方 Claude 插件市场。** 通过它，Claude 可以自主读写文件、执行终端命令、管理 Git 仓库、启动开发服务器——无需人工干预。
+### Desktop Commander — 社区 No.1 MCP 工具
 
-### ⚠️ 但存在严重的安全风险
+**Desktop Commander** 是由 Eduard Ruzga 主导的开源 MCP 服务器（MIT 协议），已被 Anthropic 收录于官方 Claude 插件市场并推荐使用。通过它，Claude 可以自主读写文件、执行终端命令、管理 Git 仓库、启动开发服务器。
 
-默认情况下，Desktop Commander 允许 AI 访问您的**整个主目录**，包括 `~/.ssh`（SSH 私钥）和 `~/.aws`（云端凭证）。只要 Claude 读取了含有恶意提示词的网页，攻击就会自动完成——您的密钥将被静默泄露，无需任何用户操作。这就是**寄生工具链攻击（Parasitic Toolchain Attack）**。
+### ⚠️ 重大安全风险
+
+默认情况下，Desktop Commander 允许 AI 访问您的**整个主目录**，包括 `~/.ssh`（SSH 私钥）和 `~/.aws`（云端凭证）。只要 Claude 读取了含有恶意提示词的网页，攻击就会自动完成——无需任何用户操作。这就是**寄生工具链攻击（Parasitic Toolchain Attack）**。
 
 ```
 ① 注入 — 恶意指令隐藏在 Claude 抓取的网页中
@@ -77,28 +205,152 @@ MCP（模型上下文协议）是全球增长最快的 AI 基础设施标准。�
 ③ 泄露 — 通过 curl 将数据发送给攻击者，全程零用户交互
 ```
 
-### 解决方案：Docker Shield
+根本原因是 LLM 无法区分数据与指令——这是无法修补的架构缺陷。解决方案是用 Docker 让密钥**在物理层面无法访问**。
 
-本仓库实现了 **Docker Shield** —— 一种容器隔离层，使您的密钥**在物理层面无法访问**，同时保持 git、GitHub CLI 和开发服务器在 DC 内部完全可用。
+### 对比
 
 | | 默认 DC | Docker Shield |
 |---|---|---|
-| `~/.ssh` SSH 私钥 | 🔴 可被窃取 | ✅ 物理隔离，无法访问 |
-| `~/.aws` 云端凭证 | 🔴 可被窃取 | ✅ 物理隔离，无法访问 |
+| `~/.ssh` SSH 私钥 | 🔴 可被窃取 | ✅ 物理隔离 |
+| `~/.aws` 云端凭证 | 🔴 可被窃取 | ✅ 物理隔离 |
+| 其他项目的 `.env` | 🔴 可被窃取 | ✅ 物理隔离 |
 | `git push` / `gh pr` | ⚙️ 依赖宿主机 | ✅ DC 内部完整运行 |
 | 开发服务器 | ⚙️ 依赖宿主机 | ✅ 端口映射支持 |
-| 每次会话手动配置 | 🔴 每次都需要 | ✅ 自动应用，无需操作 |
+| 每次会话手动配置 | 🔴 每次都需要 | ✅ 自动应用 |
 
-### 快速开始
+### 环境准备
+
+- macOS + [Homebrew](https://brew.sh)
+- `brew install gh`（GitHub CLI）
+- Docker Desktop（见 STEP 1）
+
+### STEP 0 — 克隆仓库
 
 ```bash
 git clone https://github.com/AXSC-Studio/desktop-commander.git ~/Development/desktop_commander
 cd ~/Development/desktop_commander && mkdir -p dc-data
-gh auth login -h github.com --insecure-storage
-bash build.sh desktop-commander:latest
 ```
 
-完整的分步骤指南请参阅[日本語部分](#-日本語)（含完整配置说明）。
+
+### STEP 1 — 安装 Docker Desktop
+
+1. 从 `https://www.docker.com/products/docker-desktop/` 下载并安装
+2. 启动 → "Use recommended settings" → Finish → Skip
+3. 确认底部显示 "Engine running"
+4. **允许后台运行（必须）**
+5. 齿轮图标 → General → 勾选 "Start Docker Desktop when you sign in"
+
+> ⚠️ Docker Desktop 必须在 Claude Desktop **之前**启动。
+
+### STEP 2 — 卸载 DXT
+
+1. Claude Desktop → 设置 → 扩展 → desktop-commander → 卸载
+2. **使用 Cmd+Q 完全退出**（仅关闭窗口不够）
+
+### STEP 3 — GitHub CLI 认证（重要）
+
+```bash
+gh auth login -h github.com --insecure-storage
+```
+
+- 协议选择 **HTTPS**
+- 认证方式选择 **Login with a web browser**
+- 在浏览器中输入终端显示的 `XXXX-XXXX` 代码
+- 出现 `Authentication credentials saved in plain text` 即成功
+
+> **为什么需要 `--insecure-storage`？** macOS 默认将 gh token 存入 Keychain。Docker 容器无法访问 Keychain，因此必须将 token 存储到 `~/.config/gh/hosts.yml`（文件形式）。容器以 `:ro`（只读）挂载该文件，防止篡改。
+
+### STEP 4 — 编辑 claude_desktop_config.json
+
+```bash
+open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+```
+
+在 `mcpServers` 中添加以下内容（将 `用户名` 替换为实际用户名，选择可用端口）：
+
+```json
+"desktop-commander": {
+  "command": "docker",
+  "args": [
+    "run", "--rm", "-i",
+    "-v", "/Users/用户名/Development:/Users/用户名/Development",
+    "-v", "/Users/用户名/Development/desktop_commander/dc-data:/root/.claude-server-commander",
+    "-v", "/Users/用户名/.config/gh:/root/.config/gh:ro",
+    "-v", "/Users/用户名/.gitconfig:/root/.gitconfig:ro",
+    "-e", "DC_ALLOWED_DIR=/Users/用户名/Development",
+    "-p", "XXXX:XXXX",
+    "--network", "bridge",
+    "desktop-commander:latest"
+  ]
+}
+```
+
+确认用户名：`whoami` — 端口从 6000–9999 中选择空闲端口。
+
+| 挂载路径 | 权限 | 用途 |
+|---|---|---|
+| `/Development` | 读写 | AI 的工作目录 |
+| `~/.config/gh` | `:ro` | gh 认证 token（防篡改） |
+| `~/.gitconfig` | `:ro` | git 身份信息（防篡改） |
+| `~/.ssh` | **不挂载** | SSH 私钥物理保护 |
+
+
+### STEP 5 — 构建 Docker 镜像
+
+```bash
+cd ~/Development/desktop_commander
+bash build.sh desktop-commander:latest
+# 预期输出：Build complete: desktop-commander:latest
+```
+
+### STEP 6 — 启动并验证
+
+1. 确认 Docker Desktop 已运行
+2. 启动 Claude Desktop → 新建对话
+3. 发送：`请执行 Desktop Commander 的 get_config`
+
+| 验证项 | 预期值 |
+|---|---|
+| `isContainer` | `true` |
+| `isDXT` | `false` |
+| `allowedDirectories` | `["/Users/用户名/Development"]` |
+| `blockedCommands` | 包含 `nc`、`scp` 等 |
+
+### Docker Shield 开启后可用的功能
+
+```bash
+# 在 DC 内部完整运行（无需终端）
+git add . && git commit -m "message" && git push
+gh pr create && gh auth status
+npm run dev -- --port XXXX   # 在宿主机浏览器通过 localhost:XXXX 访问
+```
+
+> **不支持 SSH git（`git@github.com:...`）。** 请使用 HTTPS（`https://github.com/...`）。
+
+### 安全设计：三层防护
+
+```
+第1层：Docker 隔离墙  — 主要防护（始终有效，无法绕过）
+  └─ ~/.ssh、~/.aws → 未挂载 = 物理上无法访问
+
+第2层：allowedDirectories — 软件围栏
+  └─ DC 拒绝 /Development 以外的访问
+
+第3层：blockedCommands — 出口过滤
+  └─ 阻断 nc、scp、ftp 等传输类命令
+```
+
+**残留风险：** `curl` 保持开放（用于健康检查）。生产环境建议使用 `--network none`。
+
+### 检查清单
+
+- [ ] 已克隆仓库并创建 `dc-data/`
+- [ ] Docker Desktop 已安装、运行、设置自动启动
+- [ ] 已卸载 DXT（Cmd+Q 完全退出）
+- [ ] 完成 `gh auth login -h github.com --insecure-storage`
+- [ ] 已编辑 `claude_desktop_config.json`（4 个挂载 + 端口 + DC_ALLOWED_DIR）
+- [ ] `bash build.sh desktop-commander:latest` 成功
+- [ ] 已通过 get_config 确认 `isContainer: true`
 
 ### 作者
 
@@ -106,7 +358,6 @@ bash build.sh desktop-commander:latest
 🐦 [@peaske_en](https://x.com/peaske_en) · 🏢 [AXSC Studio](https://github.com/AXSC-Studio)
 
 ⭐ **如果本项目对您有帮助，请给个 Star！**
-
 
 ---
 
