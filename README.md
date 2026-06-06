@@ -328,7 +328,13 @@ open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 }
 ```
 
-确认用户名：`whoami` — 端口从 6000–9999 中选择空闲端口。
+确认用户名：`whoami`
+
+**⚠️ 端口冲突检查（关键）：** 映射前请确认端口空闲：
+```bash
+lsof -i :XXXX  # 无输出 = 可用
+```
+> 切勿映射宿主机已占用的端口（如开发服务器、数据库等）。若映射端口被占用，Docker 将静默失败，DC 显示"Server disconnected"。
 
 | 挂载路径 | 权限 | 用途 |
 |---|---|---|
@@ -528,6 +534,8 @@ gh auth login -h github.com --insecure-storage
 
 > **なぜ `--insecure-storage` が必要か：** macOS のデフォルトでは gh トークンが Keychain に保存されます。Docker コンテナは Keychain にアクセスできないため、`~/.config/gh/hosts.yml` への保存が必須です。
 
+> **⚠️ トークン期限切れ時：** `gh auth login -h github.com --insecure-storage` を再実行してください。`gh auth refresh` は**絶対に使わないこと** — Keychain にのみ書き込まれ、Docker 認証が壊れます。
+
 
 ### STEP 4  claude_desktop_config.json を編集する
 
@@ -553,7 +561,13 @@ open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 }
 ```
 
-**ユーザー名確認：** `whoami` **｜ ポート：** 6000〜9999 から空きを選ぶ（`lsof -i :XXXX` で確認）
+**ユーザー名確認：** `whoami`
+
+**⚠️ ポート競合チェック（重要）：** マッピング前に必ず空きを確認：
+```bash
+lsof -i :XXXX  # 出力なし = 使用可
+```
+> ホストで稼働中のサービス（開発サーバー・DBなど）が使うポートを絶対にマップしないこと。競合があるとDockerが即死し DC が "Server disconnected" になります。
 
 | マウント | 権限 | 意図 |
 |---|---|---|
