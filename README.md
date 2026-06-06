@@ -14,7 +14,7 @@
 
 MCP (Model Context Protocol) is the world's fastest-growing AI infrastructure standard — adopted by 28% of Fortune 500 companies, powering 20,000+ servers with 97M+ monthly SDK downloads, and named the #1 IT Infrastructure Technology of 2026. Every major AI company (Anthropic, OpenAI, Google, Amazon, Microsoft) has rallied behind it. It is the "USB-C of AI" — a universal connector that gives AI true hands and feet to operate autonomously.
 
-**Desktop Commander is Anthropic's flagship MCP tool.** With it, Claude can read/write files, execute terminal commands, manage git repositories, and run dev servers — all autonomously.
+**Desktop Commander is the **#1 community MCP tool, officially recommended by Anthropic** on their Claude plugin marketplace. It is open-source (MIT), developed by Eduard Ruzga, and endorsed — but not built — by Anthropic.** With it, Claude can read/write files, execute terminal commands, manage git repositories, and run dev servers — all autonomously.
 
 ### ⚠️ But there is a critical security risk.
 
@@ -65,7 +65,7 @@ See the [Japanese section](#-日本語) for the complete step-by-step guide.
 
 MCP（模型上下文协议）是全球增长最快的 AI 基础设施标准。财富 500 强中 28% 的企业已采用，服务器数量超过 2 万个，每月 SDK 下载量达 9700 万次，并荣获 2026 年度 IT 基础设施技术大奖第一名。Anthropic、OpenAI、Google、Amazon、Microsoft 等各大 AI 巨头均已采用同一标准——这在科技史上极为罕见。MCP 被称为"AI 界的 USB-C"，是让 AI 真正拥有"手脚"、能够自主操作计算机的通用连接标准。
 
-**Desktop Commander 是 Anthropic 官方旗舰 MCP 工具。** 通过它，Claude 可以自主读写文件、执行终端命令、管理 Git 仓库、启动开发服务器——无需人工干预。
+**Desktop Commander 是 **Anthropic 官方推荐**的社区 No.1 MCP 工具，由开发者 Eduard Ruzga 主导的开源项目（MIT 协议），已被 Anthropic 收录于官方 Claude 插件市场。** 通过它，Claude 可以自主读写文件、执行终端命令、管理 Git 仓库、启动开发服务器——无需人工干预。
 
 ### ⚠️ 但存在严重的安全风险
 
@@ -120,7 +120,7 @@ MCP（Model Context Protocol）は今、世界で最も注目される IT イン
 
 MCP は「AI 界の USB-C」── AI とあらゆるツールの間に共通の差し込み口を作る規格です。これにより AI は「答えるだけの存在」から「自律して動く存在」に変わります。
 
-**Desktop Commander は Anthropic 公式の旗艦 MCP ツールです。** Claude がファイルの読み書き・コマンド実行・git 操作・開発サーバー管理を自律的に行えるようになります。
+**Desktop Commander は **Anthropic が公式プラグインページで推奨する** No.1 コミュニティ MCP ツールです。開発者は Eduard Ruzga 氏で、MIT ライセンスのオープンソース。Anthropic 製ではありませんが、Anthropic 公認のエコシステム推奨ツールです。** Claude がファイルの読み書き・コマンド実行・git 操作・開発サーバー管理を自律的に行えるようになります。
 
 ### ⚠️ しかし！重大なセキュリティリスクが潜んでいる
 
