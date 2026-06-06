@@ -4,8 +4,10 @@
 ALLOWED_DIR="${DC_ALLOWED_DIR:-/workspace}"
 CONFIG="/root/.claude-server-commander/config.json"
 
-git config --global credential.helper '!/usr/bin/gh auth git-credential' 2>/dev/null || true
-git config --global --add safe.directory "${ALLOWED_DIR}" 2>/dev/null || true
+# macOS の .gitconfig は /opt/homebrew/bin/gh を参照する
+# Alpine には存在しないためシンリンクで解決
+mkdir -p /opt/homebrew/bin
+ln -sf /usr/bin/gh /opt/homebrew/bin/gh 2>/dev/null || true
 
 patch_config() {
   node -e "
