@@ -53,6 +53,22 @@ desktop_commander/
 
 ---
 
+## STEP 0  リポジトリをクローンする
+
+```bash
+git clone https://github.com/peaske/desktop-commander.git ~/Development/desktop_commander
+cd ~/Development/desktop_commander
+mkdir -p dc-data
+```
+
+> `~/.gitconfig` が未設定の場合は先に設定してください：
+> ```bash
+> git config --global user.name 'あなたの名前'
+> git config --global user.email 'your@email.com'
+> ```
+
+---
+
 ## STEP 1  Docker Desktop をインストールする
 
 1. `https://www.docker.com/products/docker-desktop/` からダウンロード・インストール
@@ -253,6 +269,7 @@ Production 環境では `--network none` の使用を検討してください。
 ## チェックリスト
 
 **初回セットアップ**
+- [ ] リポジトリをクローン済み（git clone + mkdir -p dc-data）
 - [ ] Docker Desktop インストール・起動済み
 - [ ] 「ログイン時に自動起動」設定 ON
 - [ ] DXT アンインストール済み
