@@ -10,6 +10,21 @@
 
 ## 🇺🇸 English
 
+
+### Changelog
+
+| Version | Date | Change |
+|---|---|---|
+| v1.2.0 | 2026-06-06 | Auto-detect `Development` dir at startup — no manual config required (macOS + Linux) |
+| v1.1.2 | 2026-06-06 | Added Linux `/home` path to auto-detection |
+| v1.1.1 | 2026-06-06 | Fixed git credential: symlink `/opt/homebrew/bin/gh` for read-only `.gitconfig` mount |
+| v1.1.0 | 2026-06-06 | Added `gh auth --insecure-storage` step — required due to Docker/Keychain incompatibility |
+| v1.0.2 | 2026-06-06 | Fixed port mapping: replaced `3000-9999` bulk binding with user-defined fixed ports |
+| v1.0.1 | 2026-06-06 | Added `bash` and `curl` to Dockerfile |
+| v1.0.0 | 2026-06-06 | Initial Docker Shield release — EN/ZH/JA documentation, 18-slide deck |
+
+---
+
 ### What is MCP?
 
 MCP (Model Context Protocol) is the fastest-growing AI infrastructure standard in the world — adopted by 28% of Fortune 500 companies, powering 20,000+ servers with 97M+ monthly SDK downloads, and named the #1 IT Infrastructure Technology of 2026. Anthropic, OpenAI, Google, Amazon, and Microsoft have all rallied behind the same standard. It is the "USB-C of AI" — a universal connector that gives AI true hands and feet to operate autonomously.
@@ -185,6 +200,21 @@ Issues and PRs welcome: Linux/Windows support · `--network none` dev server set
 ---
 
 ## 🇨🇳 中文
+
+
+### 更新日志
+
+| 版本 | 日期 | 变更内容 |
+|---|---|---|
+| v1.2.0 | 2026-06-06 | 启动时自动检测 `Development` 目录，无需手动配置（macOS + Linux）|
+| v1.1.2 | 2026-06-06 | 自动检测增加 Linux `/home` 路径支持 |
+| v1.1.1 | 2026-06-06 | 修复 git 认证：为只读 `.gitconfig` 挂载创建 `/opt/homebrew/bin/gh` 符号链接 |
+| v1.1.0 | 2026-06-06 | 新增 `gh auth --insecure-storage` 步骤，解决 Docker 容器无法访问 macOS Keychain 的问题 |
+| v1.0.2 | 2026-06-06 | 修复端口映射：将 `3000-9999` 批量绑定改为用户自定义固定端口 |
+| v1.0.1 | 2026-06-06 | Dockerfile 新增 `bash` 和 `curl` |
+| v1.0.0 | 2026-06-06 | Docker Shield 首次发布，含英文/中文/日文完整文档及 18 张架构幻灯片 |
+
+---
 
 ### 什么是 MCP？
 
@@ -362,6 +392,21 @@ npm run dev -- --port XXXX   # 在宿主机浏览器通过 localhost:XXXX 访问
 ## 🇯🇵 日本語
 
 > **DC** = Desktop Commander（このドキュメント全体での略称）
+
+
+### 変更履歴
+
+| バージョン | 日付 | 変更内容 |
+|---|---|---|
+| v1.2.0 | 2026-06-06 | 起動時に `Development` ディレクトリを自動検出 — 手動設定不要（macOS + Linux 対応）|
+| v1.1.2 | 2026-06-06 | Linux の `/home` パスを自動検出対象に追加 |
+| v1.1.1 | 2026-06-06 | git 認証修正：read-only `.gitconfig` マウント対応のため `/opt/homebrew/bin/gh` シンリンクを追加 |
+| v1.1.0 | 2026-06-06 | `gh auth --insecure-storage` ステップを追加 — Docker コンテナが macOS Keychain にアクセスできない問題への対処 |
+| v1.0.2 | 2026-06-06 | ポートマッピング修正：`3000-9999` 一括バインドを固定ポート指定に変更 |
+| v1.0.1 | 2026-06-06 | Dockerfile に `bash` と `curl` を追加 |
+| v1.0.0 | 2026-06-06 | Docker Shield 初回リリース — 日英中 3言語ドキュメント・18枚スライド公開 |
+
+---
 
 ### MCP とは？── AI に「手足」が生える世界共通規格
 
