@@ -99,7 +99,6 @@ Add to `mcpServers` (replace `yourusername` and choose ports):
     "-v", "/Users/yourusername/Development/desktop_commander/dc-data:/root/.claude-server-commander",
     "-v", "/Users/yourusername/.config/gh:/root/.config/gh:ro",
     "-v", "/Users/yourusername/.gitconfig:/root/.gitconfig:ro",
-    "-e", "DC_ALLOWED_DIR=/Users/yourusername/Development",
     "-p", "XXXX:XXXX",
     "--network", "bridge",
     "desktop-commander:latest"
@@ -168,7 +167,7 @@ Layer 3: blockedCommands    — Exit filter
 - [ ] Docker Desktop installed, running, auto-start ON
 - [ ] DXT uninstalled (Cmd+Q to fully quit)
 - [ ] `gh auth login -h github.com --insecure-storage` completed
-- [ ] `claude_desktop_config.json` edited (4 mounts + port + DC_ALLOWED_DIR)
+- [ ] `claude_desktop_config.json` edited (4 mounts + port)
 - [ ] `bash build.sh desktop-commander:latest` succeeded
 - [ ] `isContainer: true` confirmed in get_config
 
@@ -277,7 +276,6 @@ open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
     "-v", "/Users/用户名/Development/desktop_commander/dc-data:/root/.claude-server-commander",
     "-v", "/Users/用户名/.config/gh:/root/.config/gh:ro",
     "-v", "/Users/用户名/.gitconfig:/root/.gitconfig:ro",
-    "-e", "DC_ALLOWED_DIR=/Users/用户名/Development",
     "-p", "XXXX:XXXX",
     "--network", "bridge",
     "desktop-commander:latest"
@@ -348,7 +346,7 @@ npm run dev -- --port XXXX   # 在宿主机浏览器通过 localhost:XXXX 访问
 - [ ] Docker Desktop 已安装、运行、设置自动启动
 - [ ] 已卸载 DXT（Cmd+Q 完全退出）
 - [ ] 完成 `gh auth login -h github.com --insecure-storage`
-- [ ] 已编辑 `claude_desktop_config.json`（4 个挂载 + 端口 + DC_ALLOWED_DIR）
+- [ ] 已编辑 `claude_desktop_config.json`（4 个挂载 + 端口）
 - [ ] `bash build.sh desktop-commander:latest` 成功
 - [ ] 已通过 get_config 确认 `isContainer: true`
 
@@ -486,7 +484,6 @@ open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
     "-v", "/Users/あなたのユーザー名/Development/desktop_commander/dc-data:/root/.claude-server-commander",
     "-v", "/Users/あなたのユーザー名/.config/gh:/root/.config/gh:ro",
     "-v", "/Users/あなたのユーザー名/.gitconfig:/root/.gitconfig:ro",
-    "-e", "DC_ALLOWED_DIR=/Users/あなたのユーザー名/Development",
     "-p", "XXXX:XXXX",
     "--network", "bridge",
     "desktop-commander:latest"
@@ -569,7 +566,7 @@ Layer 3: blockedCommands    ← 出口フィルタ
 - [ ] Docker Desktop インストール・自動起動 ON
 - [ ] DXT アンインストール（Cmd+Q で完全終了）
 - [ ] `gh auth login -h github.com --insecure-storage` 完了
-- [ ] `claude_desktop_config.json` 編集済み（4 マウント + ポート + DC_ALLOWED_DIR）
+- [ ] `claude_desktop_config.json` 編集済み（4 マウント + ポート）
 - [ ] `bash build.sh desktop-commander:latest` 成功
 - [ ] `isContainer: true` + `allowedDirectories` が正しいパスで確認済み
 
