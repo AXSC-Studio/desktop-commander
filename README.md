@@ -99,6 +99,8 @@ gh auth login -h github.com --insecure-storage
 
 > **Why `--insecure-storage`?** By default, macOS stores the gh token in Keychain. Docker containers cannot access Keychain, so the token must be stored in `~/.config/gh/hosts.yml` (a plain file). The container mounts this file as `:ro` (read-only), preventing tampering.
 
+> **⚠️ When token expires:** Run `gh auth login -h github.com --insecure-storage` again. Do NOT use `gh auth refresh` — it writes to Keychain only and will break Docker authentication.
+
 ### STEP 4 — Edit claude_desktop_config.json
 
 ```bash
@@ -123,7 +125,14 @@ Add to `mcpServers` (replace `yourusername` and choose ports):
 }
 ```
 
-Confirm your username: `whoami` — Choose ports from 6000–9999 to avoid conflicts.
+Confirm your username: `whoami`
+
+**⚠️ Port conflict check (critical):** Before choosing ports, verify they are free:
+```bash
+lsof -i :XXXX  # empty output = safe to use
+```
+> Never map ports already in use by your host services (e.g. dev servers, databases).
+> If a mapped port is in use, Docker silently fails to start — DC shows "Server disconnected".
 
 | Mount | Permission | Purpose |
 |---|---|---|
@@ -136,10 +145,12 @@ Confirm your username: `whoami` — Choose ports from 6000–9999 to avoid confl
 ### STEP 5 — Build the Docker image
 
 ```bash
-cd ~/Development/desktop_commander
+cd ~/Development/desktop_commander  # must be in this directory
 bash build.sh desktop-commander:latest
 # Expected: Build complete: desktop-commander:latest
 ```
+
+> **⚠️ Must run from inside `desktop_commander/`** — running from any other directory causes `Dockerfile not found`.
 
 ### STEP 6 — Launch and verify
 
