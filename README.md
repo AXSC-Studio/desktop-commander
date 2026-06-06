@@ -403,7 +403,7 @@ MCP は「AI 界の USB-C」── AI とあらゆるツールの間に共通の
 
 設計思想・攻撃手法・セットアップ手順を18枚のスライドで解説しています：
 
-👉 **[Desktop Commander Docker Shield — 完全マニュアル（18枚スライド）](https://claude.ai/public/artifacts/56167086-2154-40b5-b4e8-d0b1025854bd)**
+👉 **[Desktop Commander Docker Shield — 完全マニュアル（18枚スライド）](https://claude.ai/public/artifacts/c103b10c-a120-4d03-88c0-c14502f62745)**
 
 ---
 
@@ -590,7 +590,7 @@ Issue・PR 歓迎します。
 
 - 🐦 X（Twitter）: [@peaske_en](https://x.com/peaske_en)
 - 🏢 Organization: [AXSC Studio](https://github.com/AXSC-Studio)
-- 📊 スライド資料: [18枚スライド](https://claude.ai/public/artifacts/56167086-2154-40b5-b4e8-d0b1025854bd)
+- 📊 スライド資料: [18枚スライド](https://claude.ai/public/artifacts/c103b10c-a120-4d03-88c0-c14502f62745)
 
 ⭐ **このリポジトリが役に立ったらスターをお願いします！MCP セキュリティの認知向上に繋がります。**
 
