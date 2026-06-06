@@ -1,141 +1,160 @@
-# Desktop Commander セキュリティ設定マニュアル
-**対象:** AXSC 受講生
-**難易度:** 初級（コマンドのコピペのみ）
-**所要時間:** 約 30 分
+# Desktop Commander セキュリティ強化 完全マニュアル
+
+**対象:** AXSC 受講生 / Docker Shield 再現者  
+**所要時間:** 約 45 分
 
 ---
 
 ## このマニュアルでやること
 
-Desktop Commander（DC）をより安全な構成に変更します。
-変更前後の違いはこうなります：
-
-| 項目 | 変更前（デフォルト） | 変更後（このマニュアル） |
+| 項目 | 変更前（デフォルト） | 変更後（Docker Shield） |
 |---|---|---|
-| 実行環境 | ホスト Mac 上で直接動作 | Docker コンテナ内で動作 |
+| 実行環境 | ホスト Mac 上で直接動作 | Docker コンテナ内で隔離 |
 | ファイルアクセス範囲 | ホームフォルダ全体 | Development フォルダのみ |
-| 危険コマンド | 野放し | ブロック済み |
+| `~/.ssh`（SSH 秘密鍵） | 盗める | **物理的に不可能** |
+| `~/.aws`（クラウド認証） | 盗める | **物理的に不可能** |
+| git / GH CLI | ホスト依存 | **DC 内で完全動作** |
+| 開発サーバー | ホスト依存 | ポートマップで対応 |
+| セッション毎の手動設定 | 毎回必要 | **不要（自動適用）** |
 
 ---
 
-## 事前知識：なぜ Docker が必要か
+## なぜ Docker が必要か
 
-Desktop Commander は AI（Claude）がファイルを読み書きし、ターミナルコマンドを実行できるツールです。
-悪意あるプロンプトが混入すると、AI が勝手に `~/.ssh`（SSH 秘密鍵）や `.env`（API キー）を読んで
-外部に送信する攻撃（Parasitic Toolchain Attack）が成立します。
+Desktop Commander は AI が自律的にファイル読み書き・コマンド実行を行えるツールです。
+悪意あるプロンプトが混入すると `~/.ssh` や `.env` を読んで外部送信する
+**Parasitic Toolchain Attack** が成立します。ユーザー操作は不要です。
 
-Docker を使うと、AI の動作がコンテナという「檻」の中に閉じ込められます。
-外に出ようとしても物理的に不可能な構造になります。
+Docker はコンテナという「檻」を設け、攻撃が成功しても鍵（`~/.ssh`）に
+物理的に到達できない構造を作ります。
+
+---
+
+## ファイル構成（このリポジトリ）
 
 ```
-攻撃が成功しても...
-  コンテナ内から ~/.ssh へのアクセス → 不可能（マウントされていない）
-  コンテナ内から外部への curl 送信  → blockedCommands でブロック
+desktop_commander/
+├── Dockerfile        # コンテナ定義（git, gh CLI, bash, curl 含む）
+├── entrypoint.sh     # 起動スクリプト（設定自動適用 + git 認証解決）
+├── build.sh          # イメージビルドスクリプト
+├── dc-config.json    # blockedCommands 参照用テンプレート
+└── dc-data/          # DC ランタイムデータ（.gitignore 済み）
 ```
 
 ---
 
-## STEP 0  準備：フォルダ構成を確認する
+## 事前準備
 
-ターミナルで以下を実行してフォルダが存在するか確認します：
-
-```bash
-ls /Users/あなたのユーザー名/Development/desktop_commander/
-```
-
-以下のファイルが揃っていれば OK です：
-
-```
-Dockerfile
-build.sh
-dc-config.json
-MANUAL.md（このファイル）
-dc-data/（空のフォルダ）
-```
-
-ない場合は講師に確認してください。
+- **gh CLI** がホスト Mac にインストール済みであること
+  ```bash
+  brew install gh
+  ```
+- **Docker Desktop** をインストール（後述 STEP 1）
 
 ---
 
 ## STEP 1  Docker Desktop をインストールする
 
-1. ブラウザで以下を開く：
-   `https://www.docker.com/products/docker-desktop/`
+1. `https://www.docker.com/products/docker-desktop/` からダウンロード・インストール
+2. 起動 → 「Use recommended settings」→「Finish」→「Skip」
+3. 画面下部に「Engine running」が表示されれば完了
+4. **「バックグラウンドでの実行を許可」→ 必ず許可**
 
-2. 「Download for Mac」をクリックしてインストール
+**自動起動設定（推奨）**
+歯車アイコン > General >「Start Docker Desktop when you sign in」にチェック → Apply
 
-3. インストール後に Docker Desktop を起動する
-
-4. 「Finish setting up Docker Desktop」画面が出たら
-   「Use recommended settings」を選択して「Finish」
-
-5. 「Welcome to Docker」画面は右上の「Skip」をクリック
-
-6. 画面下部に「Engine running」と表示されれば起動完了
-
-**macOS から「バックグラウンドでの実行を許可」を求められたら必ず「許可」する（必須）**
-
-### Docker を PC 起動時に自動起動する設定（推奨）
-
-Docker Desktop の右上の歯車アイコン > General >
-「Start Docker Desktop when you sign in to your computer」にチェックを入れて Apply
-
-**重要：Claude Desktop より先に Docker Desktop が起動している必要があります。**
-自動起動設定にしておくと PC 再起動後も問題なく動きます。
+> Claude Desktop より先に Docker Desktop が起動している必要があります。
 
 ---
 
 ## STEP 2  DXT をアンインストールする
 
-1. Claude Desktop を開く
-2. 設定（左下のアイコン）> 拡張機能 > desktop-commander
-3. 「アンインストール」ボタンをクリック
-4. Claude Desktop を **Cmd+Q で完全終了**する
+1. Claude Desktop → 設定 > 拡張機能 > desktop-commander →「アンインストール」
+2. **Cmd+Q で完全終了**（ウィンドウを閉じるだけでは不可）
 
 ---
 
-## STEP 3  claude_desktop_config.json を編集する
+## STEP 3  GitHub CLI の認証を設定する（重要）
 
-ターミナルで以下を実行してファイルを開く：
+DC コンテナ内から `git push` / `gh pr create` を使うために
+`--insecure-storage` オプションでトークンをファイルに保存します。
+
+```bash
+gh auth login -h github.com --insecure-storage
+```
+
+- Protocol: **HTTPS** を選択
+- Authentication: **Login with a web browser** を選択
+- 表示された `XXXX-XXXX` コードをブラウザで入力
+- `Authentication credentials saved in plain text` が出れば成功
+
+> **なぜ `--insecure-storage` が必要か**
+> macOS 標準設定では gh トークンが Keychain に保存されます。
+> Docker コンテナは Keychain にアクセスできないため、
+> `~/.config/gh/hosts.yml`（ファイル）への保存が必要です。
+> コンテナは `:ro`（読み取り専用）でマウントするため書き換え不能です。
+
+---
+
+## STEP 4  claude_desktop_config.json を編集する
 
 ```bash
 open -e "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 ```
 
-テキストエディットで開いたら **Cmd+A（全選択）→ 貼り付け → Cmd+S（保存）** で以下に置き換える：
+`mcpServers` に以下を追加（他のサーバーがある場合はカンマ区切りで追記）：
 
 ```json
-{
-  "mcpServers": {
-    "desktop-commander": {
-      "command": "docker",
-      "args": [
-        "run", "--rm", "-i",
-        "-v", "/Users/あなたのユーザー名/Development:/Users/あなたのユーザー名/Development",
-        "-v", "/Users/あなたのユーザー名/Development/desktop_commander/dc-data:/root/.claude-server-commander",
-        "--network", "bridge",
-        "あなたのユーザー名/desktop-commander:latest"
-      ]
-    }
-  }
+"desktop-commander": {
+  "command": "docker",
+  "args": [
+    "run", "--rm", "-i",
+    "-v", "/Users/あなたのユーザー名/Development:/Users/あなたのユーザー名/Development",
+    "-v", "/Users/あなたのユーザー名/Development/desktop_commander/dc-data:/root/.claude-server-commander",
+    "-v", "/Users/あなたのユーザー名/.config/gh:/root/.config/gh:ro",
+    "-v", "/Users/あなたのユーザー名/.gitconfig:/root/.gitconfig:ro",
+    "-e", "DC_ALLOWED_DIR=/Users/あなたのユーザー名/Development",
+    "-p", "XXXX:XXXX",
+    "-p", "YYYY:YYYY",
+    "-p", "ZZZZ:ZZZZ",
+    "--network", "bridge",
+    "あなたのユーザー名/desktop-commander:latest"
+  ]
 }
 ```
 
-**注意：「あなたのユーザー名」を実際のユーザー名に書き換えること。**
-ターミナルで `whoami` を実行すると確認できます。
+**ユーザー名の確認:**
+```bash
+whoami
+```
 
-他の MCP サーバー（cleeean、develonica-io 等）がある場合は
-`mcpServers` の中に追加する形で記述してください。
+**ポート番号の選び方:**
+`XXXX`〜`ZZZZ` には開発サーバーで使うポートを指定します。
+よく使われる範囲（3000〜5999、8000〜8099）は競合しやすいため
+6000〜9999 から空きを選ぶことを推奨します。
+
+```bash
+# 空きポートの確認例（3つの候補）
+for port in 7432 7891 8743; do
+  lsof -i :$port > /dev/null 2>&1 && echo "$port: 使用中" || echo "$port: 空き"
+done
+```
+
+> **マウントの意味**
+> | マウント | 権限 | 用途 |
+> |---|---|---|
+> | `/Development` | 読み書き | 作業ディレクトリ |
+> | `~/.config/gh` | `:ro` | gh 認証トークン（読み取り専用） |
+> | `~/.gitconfig` | `:ro` | git identity（読み取り専用） |
+> | `~/.ssh` | **マウントなし** | SSH 秘密鍵を保護 |
 
 ---
 
-## STEP 4  Docker イメージをビルドする
-
-ターミナルで以下を順番に実行：
+## STEP 5  Docker イメージをビルドする
 
 ```bash
 cd /Users/あなたのユーザー名/Development/desktop_commander
-bash build.sh
+bash build.sh あなたのユーザー名/desktop-commander:latest
 ```
 
 以下が表示されれば成功：
@@ -144,79 +163,78 @@ bash build.sh
 Build complete: あなたのユーザー名/desktop-commander:latest
 ```
 
+> Dockerfile を変更した場合は必ず再実行すること。
+
 ---
 
-## STEP 5  Claude Desktop を再起動して動作確認する
+## STEP 6  Claude Desktop を起動して確認する
 
-1. Claude Desktop を起動する（Docker Desktop が先に起動していること）
+1. Claude Desktop を起動（Docker Desktop が先に起動していること）
 2. 新しいチャットを開く
-3. 以下を入力して確認する：
+3. 以下を入力：
 
 ```
 Desktop Commander の get_config を実行してください
 ```
 
-以下を確認する：
-
 | 確認項目 | 期待する値 |
 |---|---|
-| `platform` | `Linux (Docker)` |
 | `isContainer` | `true` |
 | `isDXT` | `false` |
-| `mountPoints` | `/Users/.../Development` が含まれる |
+| `allowedDirectories` | `["/Users/あなたのユーザー名/Development"]` |
+| `blockedCommands` | `nc`、`ncat`、`scp` 等が含まれる |
 
 ---
 
-## STEP 6  セッション開始時の設定（毎回必要）
+## Docker Shield で使えるようになること
 
-**既知の制限：** Docker コンテナは起動のたびに設定がリセットされます。
-これは DC の設計仕様です。ただし Docker のボリュームマウントにより
-コンテナ外（`~/.ssh` 等）へのアクセスは物理的に遮断されているため、実害はありません。
+### DC 内で完全動作（ターミナル不要）
 
-セッション開始時に以下の 2 つを依頼する習慣をつけてください：
+```bash
+# git 操作（HTTPS 経由・DC 内から実行可能）
+git add . && git commit -m "message" && git push
 
-```
-Desktop Commander の allowedDirectories を
-["/Users/あなたのユーザー名/Development"] に設定してください
+# GitHub CLI（DC 内から実行可能）
+gh pr create
+gh auth status
+
+# 開発サーバー（ポートマップ経由でホストブラウザからアクセス可）
+npm run dev -- --port XXXX
+curl http://localhost:XXXX
 ```
 
-```
-Desktop Commander の blockedCommands に
-nc, ncat, netcat, scp, sftp, ftp, telnet を追加してください
-（既存リストは保持したまま）
-```
+> **SSH git（`git@github.com:...`）は使えません。**
+> HTTPS（`https://github.com/...`）を使ってください。
+> 現代の開発では HTTPS + gh auth が標準です。
 
 ---
 
-## 理解しておくべき重要ポイント
-
-### blockedCommands と「確認する」の違い
-
-| 設定 | 動作 | 日常作業への影響 |
-|---|---|---|
-| `blockedCommands` | コマンドを完全に拒否 | 対象コマンドを使わなければゼロ |
-| GUI「確認する」 | 実行前に毎回承認が必要 | 承認ダイアログが頻繁に出る |
-
-`nc`（netcat）や `scp` は通常の Web 開発では使わないので
-`blockedCommands` に追加しても開発の邪魔になりません。
-
-### なぜ拡張機能に Desktop Commander が表示されないか
-
-DXT（拡張機能）と MCP Server は別物です。
-このマニュアルで設定した DC は `claude_desktop_config.json` に記述された
-外部プロセスとして動くため、設定 > 拡張機能 の画面には表示されません。
-これは正常な動作です。
-
-### Docker のボリュームマウントが主な防御
+## セキュリティ設計：3層防御
 
 ```
-allowedDirectories = ソフトウェア的な柵（リセットされることがある）
-Docker ボリュームマウント = 物理的な壁（常に有効）
+[Docker 壁]          主防御（常に有効・迂回不能）
+  └ ~/.ssh, ~/.aws, 他PJTの .env → 物理的にアクセス不能
+
+[allowedDirectories] ソフトウェア的な柵
+  └ コンテナ内での /Development 外アクセスを制限
+
+[blockedCommands]    出口フィルタ
+  └ nc, scp, ftp 等の送信系コマンドを遮断
 ```
 
-`allowedDirectories` がリセットされても
-コンテナ内には `/Development` しかマウントされていないため
-`~/.ssh`、`~/.aws` 等には物理的にアクセスできません。
+**残存ギャップ:** `curl` はヘルスチェックのため開放しています。
+`/Development` 内の `.env` は理論上 curl で外部送信可能です。
+Production 環境では `--network none` の使用を検討してください。
+
+---
+
+## entrypoint.sh が起動時に自動実行すること
+
+毎回の手動設定は不要です。コンテナ起動ごとに以下が自動適用されます。
+
+1. `allowedDirectories` を `DC_ALLOWED_DIR` のパスに設定
+2. `blockedCommands` に nc / scp / ftp 等を設定
+3. macOS Homebrew の gh パスをコンテナ内 gh へリンク（git credential 解決）
 
 ---
 
@@ -224,44 +242,29 @@ Docker ボリュームマウント = 物理的な壁（常に有効）
 
 | 症状 | 確認事項 |
 |---|---|
-| DC がチャットで反応しない | Docker Desktop が起動しているか確認 |
-| `isContainer: false` が返る | DXT が再インストールされていないか確認 |
-| `allowedDirectories: []` が返る | STEP 6 の設定コマンドを実行する |
-| build.sh でエラー | Docker Desktop の Engine が running か確認 |
+| DC が反応しない | Docker Desktop が起動しているか確認 |
+| `isContainer: false` | DXT が再インストールされていないか確認 |
+| `allowedDirectories: []` | config.json に `DC_ALLOWED_DIR` が設定されているか確認 |
+| `git push` が失敗 | `gh auth status` で `✓ Logged in` を確認。失敗なら STEP 3 を再実行 |
+| build.sh でエラー | Docker Desktop の Engine が Running か確認 |
 
 ---
 
 ## チェックリスト
 
+**初回セットアップ**
 - [ ] Docker Desktop インストール・起動済み
 - [ ] 「ログイン時に自動起動」設定 ON
 - [ ] DXT アンインストール済み
-- [ ] `claude_desktop_config.json` 編集済み（ユーザー名を正しく書き換えた）
-- [ ] `docker build` 成功
-- [ ] Claude Desktop 再起動後に `get_config` で `isContainer: true` を確認
-- [ ] セッション開始時の `allowedDirectories` 設定を習慣化
+- [ ] `gh auth login -h github.com --insecure-storage` 完了
+- [ ] `claude_desktop_config.json` 編集済み（4 マウント + ポート + DC_ALLOWED_DIR）
+- [ ] `bash build.sh あなたのユーザー名/desktop-commander:latest` 成功
+- [ ] `isContainer: true` + `allowedDirectories` が正しいパスで確認済み
+
+**日常運用**
+- [ ] Claude Desktop を開く前に Docker Desktop が起動していることを確認
+- [ ] gh トークン期限切れの場合は `gh auth login -h github.com --insecure-storage` を再実行
 
 ---
 
-## Docker 化後の使い分け（重要）
-
-Docker 化により、DC（コンテナ内）とターミナルの役割分担が明確になった。
-
-### DC（コンテナ）でやること
-- ファイルの読み書き・コード編集
-- ファイル検索・内容確認
-- Claude へのコマンド提案依頼
-
-### ターミナルでやること
-
-| 操作 | 理由 |
-|---|---|
-| `git add / commit / push` | 認証情報（~/.ssh）がコンテナ外 |
-| `gh pr create` 等 GitHub CLI | ~/.config/gh がコンテナにマウントされていない |
-| `npm run dev` 等サーバー起動 | コンテナの localhost ≠ ホストの localhost |
-| restart.sh 等の起動スクリプト | 上記ポート問題と同様 |
-
-### 運用パターン
-Claude がコマンドを提案 → **あなたがターミナルで実行**。
-
-DC は「コードアシスタント」、ターミナルは「システムオペレーター」として使い分ける。git 認証情報や開発サーバーのポートはホスト側に置いたまま、セキュリティを維持する。
+*Peaske / AXSC*
