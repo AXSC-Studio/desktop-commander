@@ -1,11 +1,16 @@
 #!/bin/sh
 # Desktop Commander entrypoint
-# DC_ALLOWED_DIR 環境変数でマウントしたディレクトリを指定してください
-ALLOWED_DIR="${DC_ALLOWED_DIR:-/workspace}"
+# DC_ALLOWED_DIR が未設定の場合、/Users/*/Development を自動検出する
+
+if [ -n "$DC_ALLOWED_DIR" ]; then
+  ALLOWED_DIR="$DC_ALLOWED_DIR"
+else
+  DETECTED=$(find /Users -maxdepth 2 -name "Development" -type d 2>/dev/null | head -1)
+  ALLOWED_DIR="${DETECTED:-/workspace}"
+fi
+
 CONFIG="/root/.claude-server-commander/config.json"
 
-# macOS の .gitconfig は /opt/homebrew/bin/gh を参照する
-# Alpine には存在しないためシンリンクで解決
 mkdir -p /opt/homebrew/bin
 ln -sf /usr/bin/gh /opt/homebrew/bin/gh 2>/dev/null || true
 
