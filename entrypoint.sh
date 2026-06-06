@@ -31,11 +31,24 @@ patch_config() {
         'nc','ncat','netcat','scp','sftp','ftp','telnet'
       ];
       fs.writeFileSync(p, JSON.stringify(c, null, 2));
+      process.stderr.write('entrypoint: patched -> ' + d + '\n');
     } catch(e) {
       process.stderr.write('entrypoint: patch failed: ' + e.message + '\n');
     }
   "
 }
 
-( sleep 1 && patch_config ) &
+# DCがconfigを書くまでポーリング（最大30秒）
+(
+  i=0
+  while [ $i -lt 30 ]; do
+    sleep 1
+    if [ -f "$CONFIG" ] && [ "$(wc -c < "$CONFIG" 2>/dev/null)" -gt 50 ]; then
+      patch_config
+      break
+    fi
+    i=$((i+1))
+  done
+) &
+
 exec desktop-commander
