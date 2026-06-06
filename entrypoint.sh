@@ -5,7 +5,7 @@
 if [ -n "$DC_ALLOWED_DIR" ]; then
   ALLOWED_DIR="$DC_ALLOWED_DIR"
 else
-  DETECTED=$(find /Users -maxdepth 2 -name "Development" -type d 2>/dev/null | head -1)
+  DETECTED=$(find /Users /home -maxdepth 2 -name "Development" -type d 2>/dev/null | head -1)
   ALLOWED_DIR="${DETECTED:-/workspace}"
 fi
 
