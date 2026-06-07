@@ -15,6 +15,7 @@
 
 | Version | Date | Change |
 |---|---|---|
+| v1.4.0 | 2026-06-07 | Post-start config correction — allowedDirectories now reliably set on every restart |
 | v1.3.0 | 2026-06-06 | Pre-populate config on first run — global users now work with zero manual setup |
 | v1.2.2 | 2026-06-06 | Replace `sleep 1` race condition with polling; discovered `set_config_value` API as correct approach |
 | v1.2.0 | 2026-06-06 | Auto-detect `Development` dir at startup — no manual config required (macOS + Linux) |
@@ -199,6 +200,28 @@ Layer 3: blockedCommands    — Exit filter
 - [ ] `bash build.sh desktop-commander:latest` succeeded
 - [ ] `isContainer: true` confirmed in get_config
 
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| DC not responding | Check Docker Desktop is running |
+| `isContainer: false` | Check DXT was not reinstalled |
+| `allowedDirectories: []` | Restart. v1.4.0+ auto-corrects after 3s. |
+| Server disconnected | Port conflict: run `lsof -i :XXXX` for each mapped port. Remove conflicting ports. |
+| `git push` fails | Run `gh auth status`. If invalid, re-run STEP 3. |
+| **Python not available** | **By design.** Python (FastAPI, Django) runs on host Mac terminal. DC is for Node/git/gh only. |
+| Python dev server | Start on host Mac terminal. Connect to DC-managed frontend via localhost. |
+
+### Workflow Guide
+
+| Task | Where to run |
+|---|---|
+| File edit / git / gh CLI | ✅ Inside DC |
+| Node.js / Next.js dev server | ✅ Inside DC (port-mapped) |
+| Python / FastAPI backend | 🖥️ Host Mac terminal |
+| System commands | 🖥️ Host Mac terminal |
+
 ### Contribute
 
 Issues and PRs welcome: Linux/Windows support · `--network none` dev server setups · Docker Shield for other MCP servers
@@ -219,6 +242,7 @@ Issues and PRs welcome: Linux/Windows support · `--network none` dev server set
 
 | 版本 | 日期 | 变更内容 |
 |---|---|---|
+| v1.4.0 | 2026-06-07 | 启动后配置修正 — allowedDirectories 在每次重启后均可可靠设置 |
 | v1.3.0 | 2026-06-06 | 首次启动时预写入配置，全球用户无需手动设置 |
 | v1.2.2 | 2026-06-06 | 将 `sleep 1` 竞争条件替换为轮询；确认 `set_config_value` API 为正确方案 |
 | v1.2.0 | 2026-06-06 | 启动时自动检测 `Development` 目录，无需手动配置（macOS + Linux）|
@@ -419,6 +443,7 @@ npm run dev -- --port XXXX   # 在宿主机浏览器通过 localhost:XXXX 访问
 
 | バージョン | 日付 | 変更内容 |
 |---|---|---|
+| v1.4.0 | 2026-06-07 | 起動後コンフィグ修正 — allowedDirectories が毎起動確実に設定されるように |
 | v1.3.0 | 2026-06-06 | 初回起動時に config を事前書き込み — 全世界のユーザーが設定不要で動作 |
 | v1.2.2 | 2026-06-06 | `sleep 1` の race condition を修正。`set_config_value` API が正しい設定変更手段と判明 |
 | v1.2.0 | 2026-06-06 | 起動時に `Development` ディレクトリを自動検出 — 手動設定不要（macOS + Linux 対応）|
@@ -634,6 +659,18 @@ Layer 3: blockedCommands    ← 出口フィルタ
 **残存ギャップ：** `curl` は開放中。Production では `--network none` を検討。
 
 ---
+
+### 運用ガイド：何をどこで実行するか
+
+| タスク | 実行場所 |
+|---|---|
+| ファイル編集 / git / gh CLI | ✅ DC 内 |
+| Node.js / Next.js 開発サーバー | ✅ DC 内（ポートマップ経由） |
+| **Python / FastAPI バックエンド** | 🖥️ **ホスト Mac ターミナル** |
+| システムコマンド | 🖥️ ホスト Mac ターミナル |
+
+> Python はコンテナに未インストールです。これは設計上の選択です（イメージ肥大化防止）。
+> FastAPI 等のバックエンドはホスト Mac で起動し、DC 内の Next.js フロントエンドから `localhost` 経由で接続します。
 
 ### チェックリスト
 
