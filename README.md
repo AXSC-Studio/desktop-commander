@@ -156,6 +156,10 @@ bash build.sh desktop-commander:latest
 
 > **⚠️ Must run from inside `desktop_commander/`** — running from any other directory causes `Dockerfile not found`.
 
+> **When to rebuild vs restart:**
+> - **Rebuild required** (`bash build.sh`): Only when `Dockerfile` changes (e.g., adding packages like python3).
+> - **Restart only** (Cmd+Q → relaunch): For all other changes — `entrypoint.sh`, `claude_desktop_config.json`, scripts. No rebuild needed.
+
 ### STEP 6 — Launch and verify
 
 1. Start Claude Desktop (Docker Desktop must already be running)
@@ -382,7 +386,9 @@ bash build.sh desktop-commander:latest
 # 预期输出：Build complete: desktop-commander:latest
 ```
 
-### STEP 6 — 启动并验证
+> **何时需要重新构建 vs 仅重启：**
+> - **需要重新构建** (`bash build.sh`)：仅当 `Dockerfile` 变更时（如添加 python3 等软件包）。
+> - **仅需重启** (Cmd+Q → 重新启动)：其他所有变更 — `entrypoint.sh`、`claude_desktop_config.json`、脚本文件。无需重新构建。
 
 1. 确认 Docker Desktop 已运行
 2. 启动 Claude Desktop → 新建对话
@@ -619,9 +625,9 @@ cd ~/Development/desktop_commander
 bash build.sh desktop-commander:latest
 ```
 
----
-
-### STEP 6  Claude Desktop を起動して確認する
+> **リビルド vs 再起動の判断基準：**
+> - **リビルド必須** (`bash build.sh`)：`Dockerfile` を変更した場合のみ（python3 等パッケージ追加など）。
+> - **再起動のみで OK** (Cmd+Q → 再起動)：それ以外の全変更 — `entrypoint.sh`・`claude_desktop_config.json`・スクリプト類はビルド不要。
 
 1. Docker Desktop が起動していることを確認
 2. Claude Desktop を起動 → 新しいチャット
