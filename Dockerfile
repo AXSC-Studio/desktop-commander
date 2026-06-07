@@ -3,7 +3,7 @@
 FROM node:22-alpine
 
 # 開発に必要なツールを追加
-RUN apk add --no-cache git github-cli coreutils bash curl
+RUN apk add --no-cache git github-cli coreutils bash curl python3 py3-pip
 
 # Desktop Commander をインストール
 RUN npm install -g @wonderwhy-er/desktop-commander

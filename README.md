@@ -15,6 +15,7 @@
 
 | Version | Date | Change |
 |---|---|---|
+| v1.6.0 | 2026-06-07 | Add Python 3 to Docker image — `python3` and `pip` now available inside DC |
 | v1.5.0 | 2026-06-07 | Fix `allowedDirectories=/workspace` root cause — `DC_ALLOWED_DIR` env var bypasses `find` fallback |
 | v1.4.0 | 2026-06-07 | Post-start config correction — allowedDirectories now reliably set on every restart |
 | v1.3.0 | 2026-06-06 | Pre-populate config on first run — global users now work with zero manual setup |
@@ -212,8 +213,7 @@ Layer 3: blockedCommands    — Exit filter
 | `allowedDirectories: /workspace` | Ensure `-e DC_ALLOWED_DIR=...` is set in `claude_desktop_config.json` args (see STEP 4) |
 | Server disconnected | Port conflict: run `lsof -i :XXXX` for each mapped port. Remove conflicting ports. |
 | `git push` fails | Run `gh auth status`. If invalid, re-run STEP 3. |
-| **Python not available** | **By design.** Python (FastAPI, Django) runs on host Mac terminal. DC is for Node/git/gh only. |
-| Python dev server | Start on host Mac terminal. Connect to DC-managed frontend via localhost. |
+| **Python not available** | **Rebuild required.** Run `bash build.sh` after Dockerfile update (python3 added in v1.6.0) |
 
 ### Workflow Guide
 
@@ -221,7 +221,8 @@ Layer 3: blockedCommands    — Exit filter
 |---|---|
 | File edit / git / gh CLI | ✅ Inside DC |
 | Node.js / Next.js dev server | ✅ Inside DC (port-mapped) |
-| Python / FastAPI backend | 🖥️ Host Mac terminal |
+| Python scripts / crawlers | ✅ Inside DC (`python3` available) |
+| macOS-native Python (`rumps`, `AppKit`) | 🖥️ Host Mac only (macOS API, not Docker-related) |
 | System commands | 🖥️ Host Mac terminal |
 
 ### Contribute
@@ -244,6 +245,7 @@ Issues and PRs welcome: Linux/Windows support · `--network none` dev server set
 
 | 版本 | 日期 | 变更内容 |
 |---|---|---|
+| v1.6.0 | 2026-06-07 | 在 Docker 镜像中添加 Python 3 — DC 内部现在可使用 `python3` 和 `pip` |
 | v1.5.0 | 2026-06-07 | 修复 `allowedDirectories=/workspace` 根本原因 — `DC_ALLOWED_DIR` 环境变量绕过 `find` 回退逻辑 |
 | v1.4.0 | 2026-06-07 | 启动后配置修正 — allowedDirectories 在每次重启后均可可靠设置 |
 | v1.3.0 | 2026-06-06 | 首次启动时预写入配置，全球用户无需手动设置 |
@@ -447,6 +449,7 @@ npm run dev -- --port XXXX   # 在宿主机浏览器通过 localhost:XXXX 访问
 
 | バージョン | 日付 | 変更内容 |
 |---|---|---|
+| v1.6.0 | 2026-06-07 | Docker イメージに Python 3 を追加 — DC 内で `python3` と `pip` が使用可能に |
 | v1.5.0 | 2026-06-07 | `allowedDirectories=/workspace` の根本原因修正 — `DC_ALLOWED_DIR` 環境変数で `find` フォールバックを回避 |
 | v1.4.0 | 2026-06-07 | 起動後コンフィグ修正 — allowedDirectories が毎起動確実に設定されるように |
 | v1.3.0 | 2026-06-06 | 初回起動時に config を事前書き込み — 全世界のユーザーが設定不要で動作 |
