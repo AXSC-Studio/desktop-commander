@@ -681,11 +681,9 @@ Layer 3: blockedCommands    ← 出口フィルタ
 |---|---|
 | ファイル編集 / git / gh CLI | ✅ DC 内 |
 | Node.js / Next.js 開発サーバー | ✅ DC 内（ポートマップ経由） |
-| **Python / FastAPI バックエンド** | 🖥️ **ホスト Mac ターミナル** |
+| Python スクリプト / クローラー | ✅ DC 内（`python3` 利用可能） |
+| macOS ネイティブ Python（`rumps`、`AppKit`） | 🖥️ ホスト Mac のみ（macOS API の制限、Docker 非依存） |
 | システムコマンド | 🖥️ ホスト Mac ターミナル |
-
-> Python はコンテナに未インストールです。これは設計上の選択です（イメージ肥大化防止）。
-> FastAPI 等のバックエンドはホスト Mac で起動し、DC 内の Next.js フロントエンドから `localhost` 経由で接続します。
 
 ### チェックリスト
 
