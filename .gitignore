@@ -6,3 +6,8 @@ dc-data/
 
 # ログ
 *.log
+
+# peaske ローカル運用スクリプト（絶対パス含むため公開しない）
+verify-shield.sh
+apply-shield.py
+commit-work.sh
