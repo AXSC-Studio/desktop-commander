@@ -1,5 +1,9 @@
 # 🛡️ Desktop Commander Docker Shield
 
+> **Retired (2026-10-31) / 廃止**
+> The Docker mode is no longer maintained. The build and runtime files (`Dockerfile`, `build.sh`, `entrypoint.sh`, `dc-config.json`) were moved to [`archive/docker-shield/`](archive/docker-shield/); the steps below still describe them as they were.
+> Docker モードは廃止しました。ビルド・起動用ファイルは `archive/docker-shield/` に移してあります（以下の手順は当時のままの記録です）。`dc-mode.sh` は `host` と `status` だけを扱います。
+
 [![GitHub stars](https://img.shields.io/github/stars/AXSC-Studio/desktop-commander?style=flat-square)](https://github.com/AXSC-Studio/desktop-commander/stargazers)
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square)]()
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
