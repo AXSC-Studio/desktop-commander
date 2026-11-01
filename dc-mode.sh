@@ -2,7 +2,7 @@
 # dc-mode.sh — Desktop Commander の実行モードを切り替える
 #
 #   bash dc-mode.sh host     # DXT拡張（macOSホスト直起動）へ。macOSコマンドが打てる／全FS見える
-#   bash dc-mode.sh docker   # Docker Shield（コンテナ）へ。Development+Downloadsのみ
+#   （docker モードは 2026-10-31 に廃止。archive/docker-shield/ を参照）
 #   bash dc-mode.sh status   # 今どっちか表示するだけ
 #
 # 「並存」は 2026-07-18〜09-01 の45日間ノーガードの原因なので、
@@ -126,40 +126,9 @@ PY
   c_warn "再起動後に Claude へ「DCのallowedDirectoriesを設定して」と言えば設定できます。"
 }
 
-# ---------- docker モードへ ----------
-to_docker() {
-  read -r d e <<<"$(detect_mode)"
-
-  local shield_cfg
-  shield_cfg="$(ls -1t "$S"/claude_desktop_config.json.shield.*.bak 2>/dev/null | head -1)"
-  if [ -z "$shield_cfg" ]; then
-    c_err "Shield構成のバックアップが見つかりません。"
-    c_err "~/Development/desktop_commander/README.md の STEP 4 を手動で適用してください。"
-    exit 1
-  fi
-
-  cp "$CFG" "$S/claude_desktop_config.json.host.$STAMP.bak" 2>/dev/null
-  cp "$shield_cfg" "$CFG"
-  c_ok "復元: $(basename "$shield_cfg") -> claude_desktop_config.json"
-
-  # 並存させない: DXT拡張を退避
-  if [ -d "$EXT_DIR/$DC_EXT" ]; then
-    mv "$EXT_DIR/$DC_EXT" "$EXT_DIR/$DC_EXT.disabled-$STAMP"
-    c_ok "DXT拡張を退避（並存防止）: $DC_EXT.disabled-$STAMP"
-  fi
-
-  if ! docker info >/dev/null 2>&1; then
-    c_warn "Docker Desktop が起動していません。起動しないと DC は接続できません。"
-  fi
-
-  echo
-  c_ok "=== docker モードへ切り替え完了 ==="
-  c_warn "Claude Desktop を Cmd+Q で完全終了して、起動し直してください。"
-}
-
 case "${1:-status}" in
   host)   to_host ;;
-  docker) to_docker ;;
+  docker) c_err "docker モードは廃止しました（archive/docker-shield/ を参照）"; exit 1 ;;
   status) show_status ;;
-  *) echo "usage: bash dc-mode.sh [host|docker|status]"; exit 1 ;;
+  *) echo "usage: bash dc-mode.sh [host|status]"; exit 1 ;;
 esac
